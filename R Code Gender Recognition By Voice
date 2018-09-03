@@ -1,0 +1,36 @@
+library(caret)
+voice <- read.csv(file="c:/voicegender/voice.csv", header=TRUE, sep=",")
+dim(voice)
+summary(voice)
+# create a dataset of 80% of the voice dataset
+validation_index <- createDataPartition(voice$label, p=0.80, list=FALSE)
+# testing dataset
+testset <- voice[-validation_index,]
+# training dataset
+trainset <- voice[validation_index,]
+# cross validation 10-fold
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+# Linear Discriminant Analysis
+set.seed(7)
+fit.lda <- train(label~., data=trainset, method="lda", metric=metric, trControl=control)
+# Classification and Regression Trees
+set.seed(7)
+fit.cart <- train(label~., data=trainset, method="rpart", metric=metric, trControl=control)
+# k-Nearest Neighbors
+set.seed(7)
+fit.knn <- train(label~., data=trainset, method="knn", metric=metric, trControl=control)
+# Support Vector Machines
+set.seed(7)
+fit.svm <- train(label~., data=trainset, method="svmRadial", metric=metric, trControl=control)
+# Random Forest
+set.seed(7)
+fit.rf <- train(label~., data=trainset, method="rf", metric=metric, trControl=control)
+results <- resamples(list(lda=fit.lda, cart=fit.cart, knn=fit.knn, svm=fit.svm, rf=fit.rf))
+summary(results)
+dotplot(results)
+# svm is most accurate model
+print(fit.svm)
+# run model on testing set
+predictions <- predict(fit.svm, testset)
+confusionMatrix(predictions, testset$label)
